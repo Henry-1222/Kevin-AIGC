@@ -256,30 +256,51 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans transition-colors duration-500 bg-bg-primary text-text-primary">
+    <div className={`min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans transition-all duration-1000 ${isMusicPlaying ? 'bg-black text-white' : 'bg-bg-primary text-text-primary'}`}>
       {/* Breathing Ambient Light Background */}
       <AnimatePresence>
         {isMusicPlaying && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.3, 0.6, 0.3],
-              scale: [1, 1.1, 1],
-            }}
-            exit={{ opacity: 0 }}
-            transition={{ 
-              duration: 8, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-            className="absolute inset-0 pointer-events-none z-0"
-            style={{
-              background: isDark 
-                ? 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 70%)'
-                : 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
-              filter: 'blur(100px)'
-            }}
-          />
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            {/* Orange Blob */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ 
+                x: [0, 100, -50, 0],
+                y: [0, -50, 100, 0],
+                scale: [1, 1.5, 0.8, 1],
+                opacity: [0.2, 0.4, 0.2]
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/4 left-1/4 w-[60vw] h-[60vw] rounded-full bg-orange-500/20 blur-[120px]"
+            />
+            {/* Blue Blob */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ 
+                x: [0, -120, 80, 0],
+                y: [0, 100, -60, 0],
+                scale: [1, 1.2, 1.5, 1],
+                opacity: [0.15, 0.35, 0.15]
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute bottom-1/4 right-1/4 w-[65vw] h-[65vw] rounded-full bg-blue-500/20 blur-[120px]"
+            />
+            {/* Green Blob */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ 
+                x: [0, 60, -100, 0],
+                y: [0, 80, 50, 0],
+                scale: [1, 0.9, 1.3, 1],
+                opacity: [0.1, 0.3, 0.1]
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[55vw] h-[55vw] rounded-full bg-emerald-500/15 blur-[120px]"
+            />
+          </div>
         )}
       </AnimatePresence>
 
