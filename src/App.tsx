@@ -94,11 +94,7 @@ export default function App() {
   const [showSourceCode, setShowSourceCode] = useState(false);
   const [appSourceCode, setAppSourceCode] = useState('');
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
-  const [rhythm, setRhythm] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<Partial<UserData>>({
@@ -190,66 +186,17 @@ export default function App() {
 
   const toggleMusic = () => {
     if (!audioRef.current) {
-      // Deep space ambient - more ethereal and techy
-      audioRef.current = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_f29e377e38.mp3?filename=deep-space-ambient-10657.mp3');
+      audioRef.current = new Audio('https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=space-ambient-sci-fi-10105.mp3');
       audioRef.current.loop = true;
-      audioRef.current.crossOrigin = "anonymous";
     }
     
     if (isMusicPlaying) {
       audioRef.current.pause();
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      setRhythm(0);
     } else {
-      // Initialize Web Audio API on first play
-      if (!audioContextRef.current) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        const ctx = new AudioContextClass();
-        const analyser = ctx.createAnalyser();
-        const source = ctx.createMediaElementSource(audioRef.current);
-        source.connect(analyser);
-        analyser.connect(ctx.destination);
-        analyser.fftSize = 256;
-        
-        audioContextRef.current = ctx;
-        analyserRef.current = analyser;
-      }
-
-      if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
-
       audioRef.current.play().catch(e => console.error("Audio play failed:", e));
-      
-      // Start analysis loop
-      const bufferLength = analyserRef.current!.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const updateRhythm = () => {
-        if (!analyserRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArray);
-        
-        // Get average volume for rhythm
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          sum += dataArray[i];
-        }
-        const average = sum / bufferLength;
-        setRhythm(average / 255); // Normalize to 0-1
-        
-        animationFrameRef.current = requestAnimationFrame(updateRhythm);
-      };
-      updateRhythm();
     }
     setIsMusicPlaying(!isMusicPlaying);
   };
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (audioContextRef.current) audioContextRef.current.close();
-    };
-  }, []);
 
   const t = {
     zh: {
@@ -310,76 +257,29 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans transition-colors duration-500 bg-bg-primary text-text-primary">
-      {/* Dynamic Background Rhythm Layer */}
+      {/* Breathing Ambient Light Background */}
       <AnimatePresence>
         {isMusicPlaying && (
-          <>
-            {/* Base Ethereal Glow - Pulsing with rhythm */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ 
-                opacity: 0.2 + rhythm * 0.5,
-                scale: 1 + rhythm * 0.3,
-              }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 pointer-events-none z-0"
-              style={{
-                background: isDark 
-                  ? `radial-gradient(circle at 50% 50%, rgba(99, 102, 241, ${0.15 + rhythm * 0.25}) 0%, transparent 90%)`
-                  : `radial-gradient(circle at 50% 50%, rgba(59, 130, 246, ${0.08 + rhythm * 0.2}) 0%, transparent 90%)`,
-                filter: 'blur(120px)'
-              }}
-            />
-            
-            {/* Technological "Emptiness" Grid - Expanding/Contracting with rhythm */}
-            <motion.div 
-              className="absolute inset-0 pointer-events-none z-0"
-              style={{
-                backgroundImage: `linear-gradient(to right, ${isDark ? '#ffffff15' : '#0000000a'} 1px, transparent 1px), linear-gradient(to bottom, ${isDark ? '#ffffff15' : '#0000000a'} 1px, transparent 1px)`,
-                backgroundSize: `${60 + rhythm * 120}px ${60 + rhythm * 120}px`,
-                opacity: 0.1 + rhythm * 0.3,
-                transform: `scale(${1 + rhythm * 0.1})`,
-                transition: 'background-size 0.05s linear, opacity 0.05s linear'
-              }}
-            />
-
-            {/* Distant "Stars" or Particles that flicker with rhythm */}
-            <div className="absolute inset-0 pointer-events-none z-0">
-              {[...Array(20)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-1 h-1 bg-white rounded-full"
-                  animate={{
-                    opacity: [0.1, 0.4 + rhythm * 0.6, 0.1],
-                    scale: [1, 1 + rhythm * 2, 1],
-                  }}
-                  transition={{
-                    duration: 2 + Math.random() * 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  style={{
-                    top: `${Math.random() * 100}%`,
-                    left: `${Math.random() * 100}%`,
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Screen-wide chromatic aberration or subtle shake on heavy rhythm */}
-            <motion.div
-              className="absolute inset-0 pointer-events-none z-0 border-[20px] border-transparent"
-              animate={{
-                borderColor: isDark 
-                  ? `rgba(99, 102, 241, ${rhythm * 0.1})` 
-                  : `rgba(59, 130, 246, ${rhythm * 0.05})`,
-                scale: 1 + rhythm * 0.02
-              }}
-              style={{
-                boxShadow: `inset 0 0 ${100 + rhythm * 200}px ${isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)'}`
-              }}
-            />
-          </>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0.3, 0.6, 0.3],
+              scale: [1, 1.1, 1],
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ 
+              duration: 8, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{
+              background: isDark 
+                ? 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 70%)'
+                : 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
+              filter: 'blur(100px)'
+            }}
+          />
         )}
       </AnimatePresence>
 
