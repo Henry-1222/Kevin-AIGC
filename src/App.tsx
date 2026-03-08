@@ -5,7 +5,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, User, Sun, Moon, X, Camera, LogOut, Edit2, Music, Volume2, VolumeX } from 'lucide-react';
+import { Globe, User, Sun, Moon, X, Camera, LogOut, Edit2, Music, Volume2, VolumeX, Plus, MessageSquare, Send, Search, Zap, Code, Sparkles, ChevronLeft, Trash2 } from 'lucide-react';
+import Markdown from 'react-markdown';
 
 interface UserData {
   avatar: string;
@@ -81,10 +82,328 @@ const KevinLogo = () => {
   );
 };
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  timestamp: number;
+}
+
+const ChatView = ({ 
+  model, 
+  user, 
+  onBack, 
+  isDark,
+  lang,
+  t
+}: { 
+  model: 'nano' | 'aigc' | 'max'; 
+  user: UserData | null; 
+  onBack: () => void;
+  isDark: boolean;
+  lang: 'zh' | 'en';
+  t: any;
+}) => {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+
+  const createNewChat = () => {
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: lang === 'zh' ? '新对话' : 'New Conversation',
+      messages: [],
+      timestamp: Date.now()
+    };
+    setSessions([newSession, ...sessions]);
+    setCurrentSessionId(newSession.id);
+  };
+
+  const deleteSession = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSessions(sessions.filter(s => s.id !== id));
+    if (currentSessionId === id) setCurrentSessionId(null);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || !currentSessionId) return;
+
+    const userMessage: ChatMessage = { role: 'user', content: input };
+    const updatedSessions = sessions.map(s => {
+      if (s.id === currentSessionId) {
+        return {
+          ...s,
+          messages: [...s.messages, userMessage],
+          title: s.messages.length === 0 ? input.slice(0, 20) + (input.length > 20 ? '...' : '') : s.title
+        };
+      }
+      return s;
+    });
+    setSessions(updatedSessions);
+    setInput('');
+    setIsTyping(true);
+
+    // Note: API integration should be implemented here by the user.
+    // For now, we provide a placeholder response.
+    setTimeout(() => {
+      const assistantMessage: ChatMessage = { 
+        role: 'assistant', 
+        content: lang === 'zh' 
+          ? "项目仍处于封测阶段，尚未配置MiMO API。"
+          : "The project is still in the closed beta stage, and the MiMO API has not yet been configured."
+      };
+      setSessions(prev => prev.map(s => {
+        if (s.id === currentSessionId) {
+          return { ...s, messages: [...s.messages, assistantMessage] };
+        }
+        return s;
+      }));
+      setIsTyping(false);
+    }, 1000);
+  };
+
+  const isMax = model === 'max';
+  const isNano = model === 'nano';
+
+  const chatT = {
+    zh: {
+      newChat: "新建对话",
+      welcome: `欢迎使用 Kevin ${model.toUpperCase()}`,
+      nanoDesc: "快速、高效且简单的对话 AI。",
+      aigcDesc: "全能型 AIGC，满足您的所有创意需求。",
+      maxDesc: "高级代码生成与架构分析。",
+      startBtn: "开始对话",
+      placeholder: `给 Kevin ${model.toUpperCase()} 发送消息...`,
+      webSearch: "联网搜索",
+      deepThinking: "深度思考",
+      codeExpert: "代码专家模式"
+    },
+    en: {
+      newChat: "New Chat",
+      welcome: `Welcome to Kevin ${model.toUpperCase()}`,
+      nanoDesc: "Fast, efficient, and simple conversational AI.",
+      aigcDesc: "General purpose AIGC for all your creative needs.",
+      maxDesc: "Advanced code generation and architectural analysis.",
+      startBtn: "Start Chatting",
+      placeholder: `Message Kevin ${model.toUpperCase()}...`,
+      webSearch: "Web Search",
+      deepThinking: "Deep Thinking",
+      codeExpert: "Code Expert Mode"
+    }
+  }[lang];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className={`fixed inset-0 z-50 flex flex-col md:flex-row ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-white text-gray-900'}`}
+    >
+      {/* Sidebar */}
+      <div className={`w-full md:w-72 border-r ${isDark ? 'border-white/10 bg-white/5' : 'border-black/5 bg-gray-50'} flex flex-col`}>
+        <div className="p-4 flex items-center justify-between">
+          <button onClick={onBack} className="p-2 hover:bg-black/5 rounded-lg transition-colors">
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isMax ? 'bg-purple-500' : isNano ? 'bg-blue-400' : 'bg-emerald-500'}`} />
+            <span className="text-sm font-bold tracking-tight">Kevin {model.toUpperCase()}</span>
+          </div>
+        </div>
+
+        <button 
+          onClick={createNewChat}
+          className={`mx-4 mb-4 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed ${isDark ? 'border-white/20 hover:border-white/40' : 'border-black/10 hover:border-black/20'} transition-all text-sm font-medium`}
+        >
+          <Plus size={16} />
+          {chatT.newChat}
+        </button>
+
+        <div className="flex-1 overflow-y-auto px-2 space-y-1">
+          {sessions.map(session => (
+            <div
+              key={session.id}
+              onClick={() => setCurrentSessionId(session.id)}
+              className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                currentSessionId === session.id 
+                  ? (isDark ? 'bg-white/10' : 'bg-black/5') 
+                  : 'hover:bg-black/5'
+              }`}
+            >
+              <div className="flex items-center gap-3 overflow-hidden">
+                <MessageSquare size={16} className="shrink-0 opacity-50" />
+                <span className="text-sm truncate">{session.title}</span>
+              </div>
+              <button 
+                onClick={(e) => deleteSession(session.id, e)}
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {user && (
+          <div className={`p-4 border-t ${isDark ? 'border-white/10' : 'border-black/5'} flex items-center gap-3`}>
+            {user.avatar ? (
+              <img src={user.avatar} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+                {user.name[0]}
+              </div>
+            )}
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-xs font-bold truncate">{user.name}</span>
+              <span className="text-[10px] opacity-50 truncate">{user.email}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col relative overflow-hidden">
+        {!currentSessionId ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${
+              isMax ? 'bg-purple-500/10 text-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.2)]' : 
+              isNano ? 'bg-blue-500/10 text-blue-500' : 
+              'bg-emerald-500/10 text-emerald-500'
+            }`}>
+              {isMax ? <Code size={40} /> : isNano ? <Zap size={40} /> : <Sparkles size={40} />}
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold tracking-tight mb-2">{chatT.welcome}</h3>
+              <p className="text-sm opacity-50 max-w-sm mx-auto">
+                {isMax ? chatT.maxDesc : 
+                 isNano ? chatT.nanoDesc : 
+                 chatT.aigcDesc}
+              </p>
+            </div>
+            <button 
+              onClick={createNewChat}
+              className={`px-8 py-3 rounded-2xl font-bold transition-all ${
+                isMax ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20 hover:scale-105' : 
+                'bg-text-primary text-bg-primary hover:opacity-90'
+              }`}
+            >
+              {chatT.startBtn}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+              {currentSession.messages.map((msg, idx) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={idx} 
+                  className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${
+                    msg.role === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : (isMax ? 'bg-purple-500 text-white' : 'bg-emerald-500 text-white')
+                  }`}>
+                    {msg.role === 'user' ? 'U' : 'K'}
+                  </div>
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
+                    msg.role === 'user' 
+                      ? (isDark ? 'bg-white/10' : 'bg-black/5') 
+                      : (isMax ? 'bg-purple-500/5 border border-purple-500/20' : (isDark ? 'bg-white/5' : 'bg-gray-50'))
+                  }`}>
+                    <div className="markdown-body">
+                      <Markdown>{msg.content}</Markdown>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              {isTyping && (
+                <div className="flex gap-4">
+                  <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${isMax ? 'bg-purple-500' : 'bg-emerald-500'} text-white`}>K</div>
+                  <div className="p-4 rounded-2xl bg-black/5 flex gap-1 items-center">
+                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div className={`p-4 md:p-8 pt-0 ${isMax ? 'bg-gradient-to-t from-purple-500/5 to-transparent' : ''}`}>
+              <div className="max-w-3xl mx-auto relative">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={chatT.placeholder}
+                  className={`w-full bg-transparent border-2 ${
+                    isMax ? 'border-purple-500/30 focus:border-purple-500' : 
+                    isDark ? 'border-white/10 focus:border-white/30' : 'border-black/10 focus:border-black/30'
+                  } rounded-2xl px-4 py-4 pr-12 text-sm resize-none h-24 outline-none transition-all`}
+                />
+                <button 
+                  onClick={handleSend}
+                  disabled={!input.trim() || isTyping}
+                  className={`absolute bottom-4 right-4 p-2 rounded-xl transition-all ${
+                    input.trim() ? (isMax ? 'bg-purple-500 text-white' : 'bg-emerald-500 text-white') : 'opacity-20'
+                  }`}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+              
+              {/* Feature Tags */}
+              <div className="flex flex-wrap justify-center gap-2 mt-4">
+                {!isNano && (
+                  <>
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      isDark ? 'border-white/10 bg-white/5' : 'border-black/5 bg-black/5'
+                    }`}>
+                      <Search size={10} />
+                      {chatT.webSearch}
+                    </div>
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      isDark ? 'border-white/10 bg-white/5' : 'border-black/5 bg-black/5'
+                    }`}>
+                      <Zap size={10} />
+                      {chatT.deepThinking}
+                    </div>
+                  </>
+                )}
+                {isMax && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-purple-500/30 bg-purple-500/10 text-purple-500">
+                    <Code size={10} />
+                    {chatT.codeExpert}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 export default function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const [isDark, setIsDark] = useState(false);
-  const [view, setView] = useState<'main' | 'more'>('main');
+  const [view, setView] = useState<'main' | 'more' | 'nano' | 'aigc' | 'max'>('main');
   
   // User State
   const [user, setUser] = useState<UserData | null>(null);
@@ -253,6 +572,19 @@ export default function App() {
 
   if (showSourceCode) {
     return <SourceCodeView code={appSourceCode} onBack={() => setShowSourceCode(false)} />;
+  }
+
+  if (['nano', 'aigc', 'max'].includes(view)) {
+    return (
+      <ChatView 
+        model={view as 'nano' | 'aigc' | 'max'} 
+        user={user} 
+        onBack={() => setView('main')}
+        isDark={isDark || isMusicPlaying}
+        lang={lang}
+        t={t}
+      />
+    );
   }
 
   return (
@@ -652,49 +984,43 @@ export default function App() {
             className="flex flex-col md:flex-row items-center justify-center gap-8 w-full"
           >
             {/* Left Small Square */}
-            <motion.a
-              href="https://nano.frgzn.cn"
-              target="_blank"
-              rel="noopener noreferrer"
+            <motion.div
+              onClick={() => setView('nano')}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.08, y: -5, backgroundColor: "var(--surface)" }}
-              className="w-32 h-32 md:w-40 md:h-40 bg-surface border border-border-subtle shadow-sm rounded-3xl flex items-center justify-center text-center p-4 hover:shadow-lg transition-all group"
+              className="w-32 h-32 md:w-40 md:h-40 bg-surface border border-border-subtle shadow-sm rounded-3xl flex items-center justify-center text-center p-4 hover:shadow-lg transition-all group cursor-pointer"
             >
               <span className="text-sm font-medium text-gray-500 group-hover:text-text-primary transition-colors">{t.nano}</span>
-            </motion.a>
+            </motion.div>
 
             {/* Center Large Square */}
-            <motion.a
-              href="https://cn.frgzn.cn"
-              target="_blank"
-              rel="noopener noreferrer"
+            <motion.div
+              onClick={() => setView('aigc')}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
               whileHover={{ scale: 1.05, y: -8, backgroundColor: "var(--surface)" }}
-              className="w-64 h-64 md:w-80 md:h-80 bg-surface border border-border-subtle shadow-md rounded-[3rem] flex items-center justify-center text-center p-8 hover:shadow-2xl transition-all group relative overflow-hidden"
+              className="w-64 h-64 md:w-80 md:h-80 bg-surface border border-border-subtle shadow-md rounded-[3rem] flex items-center justify-center text-center p-8 hover:shadow-2xl transition-all group relative overflow-hidden cursor-pointer"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-transparent to-text-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="text-2xl md:text-3xl font-semibold tracking-tight">{t.aigc}</span>
-            </motion.a>
+            </motion.div>
 
             {/* Right Small Square */}
-            <motion.a
-              href="https://max.frgzn.cn"
-              target="_blank"
-              rel="noopener noreferrer"
+            <motion.div
+              onClick={() => setView('max')}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
               whileHover={{ scale: 1.08, y: -5, backgroundColor: "var(--surface)" }}
-              className="w-32 h-32 md:w-40 md:h-40 bg-surface border border-border-subtle shadow-sm rounded-3xl flex items-center justify-center text-center p-4 hover:shadow-lg transition-all group"
+              className="w-32 h-32 md:w-40 md:h-40 bg-surface border border-border-subtle shadow-sm rounded-3xl flex items-center justify-center text-center p-4 hover:shadow-lg transition-all group cursor-pointer"
             >
               <span className="text-sm font-medium text-gray-500 group-hover:text-text-primary transition-colors">
                 Kevin <span className="text-red-500 font-bold">MAX</span>
               </span>
-            </motion.a>
+            </motion.div>
           </motion.main>
         ) : (
           <motion.div 
