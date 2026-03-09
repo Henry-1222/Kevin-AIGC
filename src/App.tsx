@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, User, Sun, Moon, X, Camera, LogOut, Edit2, Music, Volume2, VolumeX, Plus, MessageSquare, Send, Search, Zap, Code, Sparkles, ChevronLeft, Trash2 } from 'lucide-react';
+import { Globe, User, Sun, Moon, X, Camera, LogOut, Edit2, Music, Volume2, VolumeX, Plus, MessageSquare, Send, Search, Zap, Code, Sparkles, ChevronLeft, Trash2, History } from 'lucide-react';
 import Markdown from 'react-markdown';
 
 interface UserData {
@@ -94,6 +94,267 @@ interface ChatSession {
   timestamp: number;
 }
 
+const CreaStyleView = ({ onBack, isDark, lang, t }: { onBack: () => void; isDark: boolean; lang: 'zh' | 'en'; t: any }) => {
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+  const [subView, setSubView] = useState<'main' | 'new' | 'history'>('main');
+
+  const ct = {
+    zh: {
+      newProject: "新建项目",
+      history: "历史记录",
+      backWorkspace: "返回工作区",
+      preview: "预览",
+      code: "代码",
+      placeholder: "让 CreaStyle 构建一些东西...",
+      startConv: "开始对话以生成代码",
+      assistantMsg: "本页面进处于测试及演示阶段，尚未完成API配置。",
+      newProjectTitle: "新项目",
+      newProjectDesc: "使用 CreaStyle AI 创造精彩内容。",
+      historyTitle: "历史项目",
+      project: "项目"
+    },
+    en: {
+      newProject: "NEW PROJECT",
+      history: "HISTORY",
+      backWorkspace: "BACK TO WORKSPACE",
+      preview: "PREVIEW",
+      code: "CODE",
+      placeholder: "Ask CreaStyle to build something...",
+      startConv: "Start a conversation to generate code",
+      assistantMsg: "The project is still in the closed beta stage, and the MiMO API has not yet been configured.",
+      newProjectTitle: "NEW PROJECT",
+      newProjectDesc: "Create something amazing with CreaStyle AI.",
+      historyTitle: "HISTORY PROJECTS",
+      project: "Project"
+    }
+  }[lang];
+
+  const defaultCode = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 设置视口，适配移动端显示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你好hello</title>
+    <style>
+        /* 简单样式，让文字居中且字号更大 */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-size: 48px;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- 核心内容：你好hello -->
+    你好hello
+</body>
+</html>`;
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    const newMessages = [...messages, { role: 'user' as const, content: input }];
+    setMessages(newMessages);
+    setInput('');
+    setTimeout(() => {
+      setMessages([...newMessages, { role: 'assistant' as const, content: ct.assistantMsg }]);
+    }, 500);
+  };
+
+  const Logo = () => (
+    <div className="flex items-center font-sans tracking-tighter select-none text-2xl md:text-3xl">
+      <div className="relative flex items-center">
+        <span className="font-bold leading-none">C</span>
+        <div className="absolute -right-[0.1em] top-1/2 -translate-y-1/2 w-[0.3em] h-[0.3em] bg-blue-500 rounded-full opacity-60 blur-[1px]"></div>
+      </div>
+      <span className="font-medium lowercase leading-none ml-[-0.05em]">r</span>
+      <div className="relative flex items-center ml-[-0.05em]">
+        <span className="font-medium lowercase leading-none">e</span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+           <div className="w-[0.8em] h-[2px] bg-current rotate-[-45deg] opacity-30"></div>
+        </div>
+      </div>
+      <span className="font-medium lowercase leading-none ml-[-0.05em]">a</span>
+      <div className="relative flex items-center ml-[0.1em]">
+        <span className="font-black uppercase leading-none text-blue-500">S</span>
+        <div className="absolute inset-0 bg-blue-500/20 blur-lg -z-10"></div>
+      </div>
+      <span className="font-medium lowercase leading-none ml-[-0.05em]">t</span>
+      <span className="font-medium lowercase leading-none ml-[-0.05em]">y</span>
+      <span className="font-medium lowercase leading-none ml-[-0.05em]">l</span>
+      <div className="relative flex items-center ml-[-0.05em]">
+        <span className="font-medium lowercase leading-none">e</span>
+        <div className="absolute -top-[0.1em] right-0 w-[0.15em] h-[0.15em] bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+      </div>
+    </div>
+  );
+
+  if (subView === 'new') {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`fixed inset-0 z-[100] flex flex-col items-center justify-center ${isDark ? 'bg-black text-white' : 'bg-white text-black'}`}
+      >
+        <div className="absolute top-8 left-8">
+          <Logo />
+        </div>
+        <h2 className="text-5xl font-bold mb-8 tracking-tight">{ct.newProjectTitle}</h2>
+        <p className="text-gray-500 mb-12">{ct.newProjectDesc}</p>
+        <button 
+          onClick={() => setSubView('main')} 
+          className="px-8 py-3 border-2 border-current rounded-2xl font-bold hover:bg-current hover:text-bg-primary transition-all"
+        >
+          {ct.backWorkspace}
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (subView === 'history') {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`fixed inset-0 z-[100] flex flex-col items-center justify-center ${isDark ? 'bg-black text-white' : 'bg-white text-black'}`}
+      >
+        <div className="absolute top-8 left-8">
+          <Logo />
+        </div>
+        <h2 className="text-5xl font-bold mb-8 tracking-tight">{ct.historyTitle}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full px-6 mb-12">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="aspect-video bg-current/5 border border-current/10 rounded-3xl flex items-center justify-center opacity-40">
+              <span className="font-bold">{ct.project} {i}</span>
+            </div>
+          ))}
+        </div>
+        <button 
+          onClick={() => setSubView('main')} 
+          className="px-8 py-3 border-2 border-current rounded-2xl font-bold hover:bg-current hover:text-bg-primary transition-all"
+        >
+          {ct.backWorkspace}
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className={`fixed inset-0 z-50 flex flex-col ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-white text-gray-900'}`}
+    >
+      {/* Top Header */}
+      <div className="h-16 border-b border-border-subtle flex items-center justify-between px-6 shrink-0">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="p-2 hover:bg-black/5 rounded-lg transition-colors">
+            <ChevronLeft size={20} />
+          </button>
+          <Logo />
+        </div>
+        <div className="flex items-center gap-2 bg-black/5 p-1 rounded-xl">
+          <button 
+            onClick={() => setViewMode('preview')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'preview' ? (isDark ? 'bg-white/20' : 'bg-white shadow-sm') : 'opacity-50'}`}
+          >
+            {ct.preview}
+          </button>
+          <button 
+            onClick={() => setViewMode('code')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${viewMode === 'code' ? (isDark ? 'bg-white/20' : 'bg-white shadow-sm') : 'opacity-50'}`}
+          >
+            {ct.code}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar: Chat & Navigation */}
+        <div className="w-full md:w-1/3 border-r border-border-subtle flex flex-col p-6 gap-6 overflow-hidden">
+          <div className="flex gap-4 shrink-0">
+            <button 
+              onClick={() => setSubView('new')}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-text-primary text-bg-primary rounded-2xl font-bold text-sm hover:opacity-90 transition-all"
+            >
+              <Plus size={18} />
+              {ct.newProject}
+            </button>
+            <button 
+              onClick={() => setSubView('history')}
+              className="flex-1 flex items-center justify-center gap-2 py-3 border border-border-subtle rounded-2xl font-bold text-sm hover:bg-black/5 transition-all"
+            >
+              <History size={18} />
+              {ct.history}
+            </button>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            {messages.length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
+                <Sparkles size={48} className="mb-4" />
+                <p className="text-sm font-medium">{ct.startConv}</p>
+              </div>
+            )}
+            {messages.map((msg, idx) => (
+              <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`max-w-[90%] p-4 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-blue-500 text-white' : (isDark ? 'bg-white/10' : 'bg-black/5')}`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Chat Input */}
+          <div className="relative shrink-0">
+            <textarea 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={ct.placeholder}
+              className={`w-full ${isDark ? 'bg-white/5' : 'bg-black/5'} border-none rounded-2xl px-4 py-4 pr-12 text-sm resize-none h-24 outline-none focus:ring-2 focus:ring-black/10 transition-all`}
+            />
+            <button 
+              onClick={handleSend}
+              className="absolute bottom-4 right-4 p-2 bg-text-primary text-bg-primary rounded-xl hover:scale-105 transition-all"
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Right Content: Code/Preview */}
+        <div className="hidden md:flex flex-1 bg-gray-50 overflow-hidden relative">
+          {viewMode === 'code' ? (
+            <div className="h-full w-full p-6 overflow-auto font-mono text-sm leading-relaxed bg-[#1e1e1e] text-gray-300">
+              <pre className="whitespace-pre-wrap">{defaultCode}</pre>
+            </div>
+          ) : (
+            <iframe 
+              srcDoc={defaultCode}
+              className="w-full h-full border-none bg-white"
+              title="Preview"
+            />
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const ChatView = ({ 
   model, 
   user, 
@@ -102,7 +363,7 @@ const ChatView = ({
   lang,
   t
 }: { 
-  model: 'nano' | 'aigc' | 'max'; 
+  model: 'claw' | 'aigc' | 'max'; 
   user: UserData | null; 
   onBack: () => void;
   isDark: boolean;
@@ -113,6 +374,7 @@ const ChatView = ({
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
@@ -151,8 +413,6 @@ const ChatView = ({
     setInput('');
     setIsTyping(true);
 
-    // Note: API integration should be implemented here by the user.
-    // For now, we provide a placeholder response.
     setTimeout(() => {
       const assistantMessage: ChatMessage = { 
         role: 'assistant', 
@@ -170,33 +430,64 @@ const ChatView = ({
     }, 1000);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && currentSessionId) {
+      const userMessage: ChatMessage = { role: 'user', content: `[File Uploaded: ${file.name}]` };
+      setSessions(prev => prev.map(s => {
+        if (s.id === currentSessionId) {
+          return { ...s, messages: [...s.messages, userMessage] };
+        }
+        return s;
+      }));
+      setIsTyping(true);
+      setTimeout(() => {
+        const assistantMessage: ChatMessage = { 
+          role: 'assistant', 
+          content: lang === 'zh' 
+            ? `已接收文件: ${file.name}。由于尚未配置API，无法进行分析。`
+            : `Received file: ${file.name}. Analysis is unavailable as the API is not yet configured.`
+        };
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+            return { ...s, messages: [...s.messages, assistantMessage] };
+          }
+          return s;
+        }));
+        setIsTyping(false);
+      }, 1000);
+    }
+  };
+
   const isMax = model === 'max';
-  const isNano = model === 'nano';
+  const isClaw = model === 'claw';
 
   const chatT = {
     zh: {
       newChat: "新建对话",
-      welcome: `欢迎使用 Kevin ${model.toUpperCase()}`,
-      nanoDesc: "快速、高效且简单的对话 AI。",
+      welcome: isClaw ? "欢迎使用 Kevin Claw" : `欢迎使用 Kevin ${model.toUpperCase()}`,
+      clawDesc: "基于 OpenCLAW 架构的下一代对话 AI。",
       aigcDesc: "全能型 AIGC，满足您的所有创意需求。",
-      maxDesc: "高级代码生成与架构分析。",
+      maxDesc: "性能强劲、训练有素的伙伴。",
       startBtn: "开始对话",
-      placeholder: `给 Kevin ${model.toUpperCase()} 发送消息...`,
+      placeholder: isClaw ? "给 Kevin Claw 发送消息或上传文件..." : `给 Kevin ${model.toUpperCase()} 发送消息...`,
       webSearch: "联网搜索",
       deepThinking: "深度思考",
-      codeExpert: "代码专家模式"
+      codeExpert: "代码专家模式",
+      grantPerms: "给予系统权限"
     },
     en: {
       newChat: "New Chat",
-      welcome: `Welcome to Kevin ${model.toUpperCase()}`,
-      nanoDesc: "Fast, efficient, and simple conversational AI.",
+      welcome: isClaw ? "Welcome to Kevin Claw" : `Welcome to Kevin ${model.toUpperCase()}`,
+      clawDesc: "Next-gen conversational AI based on OpenCLAW architecture.",
       aigcDesc: "General purpose AIGC for all your creative needs.",
-      maxDesc: "Advanced code generation and architectural analysis.",
+      maxDesc: "A powerful and well-trained companion.",
       startBtn: "Start Chatting",
-      placeholder: `Message Kevin ${model.toUpperCase()}...`,
+      placeholder: isClaw ? "Message Kevin Claw or upload files..." : `Message Kevin ${model.toUpperCase()}...`,
       webSearch: "Web Search",
       deepThinking: "Deep Thinking",
-      codeExpert: "Code Expert Mode"
+      codeExpert: "Code Expert Mode",
+      grantPerms: "Grant Permissions"
     }
   }[lang];
 
@@ -214,8 +505,8 @@ const ChatView = ({
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isMax ? 'bg-purple-500' : isNano ? 'bg-blue-400' : 'bg-emerald-500'}`} />
-            <span className="text-sm font-bold tracking-tight">Kevin {model.toUpperCase()}</span>
+            <div className={`w-2 h-2 rounded-full ${isMax ? 'bg-purple-500' : isClaw ? 'bg-orange-500' : 'bg-emerald-500'}`} />
+            <span className="text-sm font-bold tracking-tight">Kevin {isClaw ? 'Claw' : model.toUpperCase()}</span>
           </div>
         </div>
 
@@ -275,16 +566,16 @@ const ChatView = ({
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
             <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${
               isMax ? 'bg-purple-500/10 text-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.2)]' : 
-              isNano ? 'bg-blue-500/10 text-blue-500' : 
+              isClaw ? 'bg-orange-500/10 text-orange-500' : 
               'bg-emerald-500/10 text-emerald-500'
             }`}>
-              {isMax ? <Code size={40} /> : isNano ? <Zap size={40} /> : <Sparkles size={40} />}
+              {isMax ? <Code size={40} /> : isClaw ? <Zap size={40} /> : <Sparkles size={40} />}
             </div>
             <div>
               <h3 className="text-2xl font-bold tracking-tight mb-2">{chatT.welcome}</h3>
               <p className="text-sm opacity-50 max-w-sm mx-auto">
                 {isMax ? chatT.maxDesc : 
-                 isNano ? chatT.nanoDesc : 
+                 isClaw ? chatT.clawDesc : 
                  chatT.aigcDesc}
               </p>
             </div>
@@ -292,6 +583,7 @@ const ChatView = ({
               onClick={createNewChat}
               className={`px-8 py-3 rounded-2xl font-bold transition-all ${
                 isMax ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20 hover:scale-105' : 
+                isClaw ? 'bg-orange-500 text-white hover:opacity-90' :
                 'bg-text-primary text-bg-primary hover:opacity-90'
               }`}
             >
@@ -311,14 +603,14 @@ const ChatView = ({
                   <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${
                     msg.role === 'user' 
                       ? 'bg-blue-500 text-white' 
-                      : (isMax ? 'bg-purple-500 text-white' : 'bg-emerald-500 text-white')
+                      : (isMax ? 'bg-purple-500 text-white' : isClaw ? 'bg-orange-500 text-white' : 'bg-emerald-500 text-white')
                   }`}>
                     {msg.role === 'user' ? 'U' : 'K'}
                   </div>
                   <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
                     msg.role === 'user' 
                       ? (isDark ? 'bg-white/10' : 'bg-black/5') 
-                      : (isMax ? 'bg-purple-500/5 border border-purple-500/20' : (isDark ? 'bg-white/5' : 'bg-gray-50'))
+                      : (isMax ? 'bg-purple-500/5 border border-purple-500/20' : isClaw ? 'bg-orange-500/5 border border-orange-500/20' : (isDark ? 'bg-white/5' : 'bg-gray-50'))
                   }`}>
                     <div className="markdown-body">
                       <Markdown>{msg.content}</Markdown>
@@ -328,7 +620,7 @@ const ChatView = ({
               ))}
               {isTyping && (
                 <div className="flex gap-4">
-                  <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${isMax ? 'bg-purple-500' : 'bg-emerald-500'} text-white`}>K</div>
+                  <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${isMax ? 'bg-purple-500' : isClaw ? 'bg-orange-500' : 'bg-emerald-500'} text-white`}>K</div>
                   <div className="p-4 rounded-2xl bg-black/5 flex gap-1 items-center">
                     <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
                     <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
@@ -339,7 +631,7 @@ const ChatView = ({
             </div>
 
             {/* Input Area */}
-            <div className={`p-4 md:p-8 pt-0 ${isMax ? 'bg-gradient-to-t from-purple-500/5 to-transparent' : ''}`}>
+            <div className={`p-4 md:p-8 pt-0 ${isMax ? 'bg-gradient-to-t from-purple-500/5 to-transparent' : isClaw ? 'bg-gradient-to-t from-orange-500/5 to-transparent' : ''}`}>
               <div className="max-w-3xl mx-auto relative">
                 <textarea
                   value={input}
@@ -353,23 +645,44 @@ const ChatView = ({
                   placeholder={chatT.placeholder}
                   className={`w-full bg-transparent border-2 ${
                     isMax ? 'border-purple-500/30 focus:border-purple-500' : 
+                    isClaw ? 'border-orange-500/30 focus:border-orange-500' :
                     isDark ? 'border-white/10 focus:border-white/30' : 'border-black/10 focus:border-black/30'
                   } rounded-2xl px-4 py-4 pr-12 text-sm resize-none h-24 outline-none transition-all`}
                 />
-                <button 
-                  onClick={handleSend}
-                  disabled={!input.trim() || isTyping}
-                  className={`absolute bottom-4 right-4 p-2 rounded-xl transition-all ${
-                    input.trim() ? (isMax ? 'bg-purple-500 text-white' : 'bg-emerald-500 text-white') : 'opacity-20'
-                  }`}
-                >
-                  <Send size={18} />
-                </button>
+                <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                  {isClaw && (
+                    <>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileUpload} 
+                        className="hidden" 
+                      />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`p-2 rounded-xl transition-all border ${isDark ? 'border-white/20 hover:bg-white/10' : 'border-black/10 hover:bg-black/5'} flex items-center gap-2 text-[10px] font-bold uppercase`}
+                        title={chatT.grantPerms}
+                      >
+                        <Plus size={14} />
+                        <span className="hidden sm:inline">{chatT.grantPerms}</span>
+                      </button>
+                    </>
+                  )}
+                  <button 
+                    onClick={handleSend}
+                    disabled={!input.trim() || isTyping}
+                    className={`p-2 rounded-xl transition-all ${
+                      input.trim() ? (isMax ? 'bg-purple-500 text-white' : isClaw ? 'bg-orange-500 text-white' : 'bg-emerald-500 text-white') : 'opacity-20'
+                    }`}
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
               </div>
               
               {/* Feature Tags */}
               <div className="flex flex-wrap justify-center gap-2 mt-4">
-                {!isNano && (
+                {!isClaw && (
                   <>
                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                       isDark ? 'border-white/10 bg-white/5' : 'border-black/5 bg-black/5'
@@ -403,7 +716,7 @@ const ChatView = ({
 export default function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const [isDark, setIsDark] = useState(false);
-  const [view, setView] = useState<'main' | 'more' | 'nano' | 'aigc' | 'max'>('main');
+  const [view, setView] = useState<'main' | 'more' | 'claw' | 'aigc' | 'max' | 'creastyle'>('main');
   
   // User State
   const [user, setUser] = useState<UserData | null>(null);
@@ -525,8 +838,9 @@ export default function App() {
       edit: "编辑资料",
       more: "更多",
       aigc: "Kevin AIGC",
-      nano: "Kevin NANO",
+      claw: "Kevin Claw",
       max: "Kevin MAX",
+      creastyle: "创新风格工坊",
       ourGame: "Our Game",
       gameTitle: "The Reah:Red Matter",
       study: "预习与复习",
@@ -550,8 +864,9 @@ export default function App() {
       edit: "Edit Profile",
       more: "More",
       aigc: "Kevin AIGC",
-      nano: "Kevin NANO",
+      claw: "Kevin Claw",
       max: "Kevin MAX",
+      creastyle: "CreaStyle",
       ourGame: "Our Game",
       gameTitle: "The Reah:Red Matter",
       study: "Preview & Review",
@@ -574,10 +889,13 @@ export default function App() {
     return <SourceCodeView code={appSourceCode} onBack={() => setShowSourceCode(false)} />;
   }
 
-  if (['nano', 'aigc', 'max'].includes(view)) {
+  if (['claw', 'aigc', 'max', 'creastyle'].includes(view)) {
+    if (view === 'creastyle') {
+      return <CreaStyleView onBack={() => setView('main')} isDark={isDark || isMusicPlaying} lang={lang} t={t} />;
+    }
     return (
       <ChatView 
-        model={view as 'nano' | 'aigc' | 'max'} 
+        model={view as 'claw' | 'aigc' | 'max'} 
         user={user} 
         onBack={() => setView('main')}
         isDark={isDark || isMusicPlaying}
@@ -985,14 +1303,14 @@ export default function App() {
           >
             {/* Left Small Square */}
             <motion.div
-              onClick={() => setView('nano')}
+              onClick={() => setView('claw')}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.08, y: -5, backgroundColor: "var(--surface)" }}
               className="w-32 h-32 md:w-40 md:h-40 bg-surface border border-border-subtle shadow-sm rounded-3xl flex items-center justify-center text-center p-4 hover:shadow-lg transition-all group cursor-pointer"
             >
-              <span className="text-sm font-medium text-gray-500 group-hover:text-text-primary transition-colors">{t.nano}</span>
+              <span className="text-sm font-medium text-gray-500 group-hover:text-text-primary transition-colors">{t.claw}</span>
             </motion.div>
 
             {/* Center Large Square */}
@@ -1055,6 +1373,38 @@ export default function App() {
           </motion.div>
         )}
       </div>
+
+      {/* Vertical Panel on the Left - Symmetrical to More button */}
+      <motion.button
+        onClick={() => setView('creastyle')}
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.5, duration: 0.8 }}
+        whileHover={{ x: 8, backgroundColor: "var(--surface)" }}
+        className="hidden lg:flex absolute left-8 top-1/2 -translate-y-1/2 flex-col w-20 h-[480px] bg-surface border border-border-subtle shadow-sm rounded-[2.5rem] p-4 items-center justify-between cursor-pointer hover:shadow-2xl transition-all z-10"
+      >
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="pt-6"
+        >
+          <span className="text-xs font-bold text-gray-400 tracking-[0.2em] vertical-text uppercase">
+            {t.creastyle}
+          </span>
+        </motion.div>
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <motion.div 
+              key={i} 
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 1.2 + (i * 0.03) }}
+              className="w-1.5 h-1.5 rounded-full bg-text-primary/10" 
+            />
+          ))}
+        </div>
+      </motion.button>
 
       {/* Vertical Panel on the Right - Moved to the far right edge */}
       <motion.button
